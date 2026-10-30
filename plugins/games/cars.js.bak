@@ -1,0 +1,144 @@
+import fs from 'fs-extra';
+import path from 'path';
+
+const raceGames = {};
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+export const NovaUltra = {
+    command: 'سباق',
+    description: 'لعبة سباق متطورة بمسافات ديناميكية تتناسب مع السرعة.',
+    elite: "off",
+    group: true,
+    prv: false,
+    lock: "off"
+};
+
+export async function execute({ sock, msg, args }) {
+    const from = msg.key.remoteJid;
+
+    if (raceGames[from] && raceGames[from].gameRunning) {
+        return await sock.sendMessage(from, { text: '⚠️ السباق مستمر بالفعل في هذه الدردشة!' }, { quoted: msg });
+    }
+
+    // --- إعدادات اللعبة ---
+    const width = 3; 
+    const height = 9; 
+    const obstaclesEmojis = ['🚜', '🚛', '🚚', '🛻', '🚙', '🚗', '🏍️', '🛵', '🛺'];
+
+    raceGames[from] = {
+        playerX: 1, 
+        obstacles: [], 
+        score: 0,
+        speed: 1300, // نبدأ بسرعة أبطأ قليلاً (1.3 ثانية) ليعتاد اللاعب
+        gameRunning: true,
+        messageKey: null,
+        startTime: Date.now()
+    };
+
+    const game = raceGames[from];
+
+    const drawBoard = (dynamicGap) => {
+        let board = `🏎️ *سباق Anastasia v4 Pro*\n\n`;
+        board += `┏━━━━━┓\n`; 
+
+        for (let y = 0; y < height; y++) {
+            board += "┃";
+            for (let x = 0; x < width; x++) {
+                const obstacle = game.obstacles.find(o => o.x === x && o.y === y);
+                const isPlayer = game.playerX === x && y === height - 1;
+
+                if (isPlayer) board += "🏎️";
+                else if (obstacle) board += obstacle.emoji;
+                else board += "⬛";
+            }
+            board += "┃\n";
+        }
+
+        board += `┗━━━━━┛\n\n`;
+        board += `🏆 النقاط: ${game.score}\n`;
+        board += `⚡ السرعة: ${(game.speed / 1000).toFixed(2)} ث/خطوة\n`;
+        board += `📏 مسافة الأمان: ${dynamicGap} بلوكات\n\n`;
+        board += `🕹️ *التحكم:* (يمين ، يسار) أو (4 ، 6)\n🛑 اكتب *انهاء* للانسحاب`;
+        return board;
+    };
+
+    const initialMsg = await sock.sendMessage(from, { text: drawBoard(2) });
+    game.messageKey = initialMsg.key;
+
+    // --- مستمع التحكم المحسن ---
+    const messageListener = async ({ messages }) => {
+        const m = messages[0];
+        if (!m.message || !game.gameRunning || m.key.remoteJid !== from) return;
+
+        const text = (
+            m.message.conversation || 
+            m.message.extendedTextMessage?.text || 
+            ""
+        ).trim().toLowerCase();
+
+        if ((text === 'يسار' || text === '4') && game.playerX > 0) game.playerX--;
+        else if ((text === 'يمين' || text === '6') && game.playerX < width - 1) game.playerX++;
+        else if (text === 'انهاء') game.gameRunning = false;
+    };
+
+    sock.ev.on('messages.upsert', messageListener);
+
+    // --- Game Loop ---
+    while (game.gameRunning) {
+        try {
+            // 1. تحريك الحواجز
+            game.obstacles.forEach(o => o.y++);
+
+            // 2. معالجة النقاط والسرعة
+            const before = game.obstacles.length;
+            game.obstacles = game.obstacles.filter(o => o.y < height);
+            const passed = before - game.obstacles.length;
+            if (passed > 0) {
+                game.score += passed * 10;
+                game.speed = Math.max(300, game.speed - 25); // زيادة السرعة تدريجياً
+            }
+
+            // 3. التحقق من الاصطدام
+            if (game.obstacles.some(o => o.x === game.playerX && o.y === height - 1)) {
+                game.gameRunning = false;
+                break;
+            }
+
+            // 4. *** منطق المسافة الديناميكية (الجديد) ***
+            // كلما قلت الـ speed (يعني اللعبة أسرع)، نزيد الـ dynamicGap
+            // إذا السرعة 1300 المسافة 2 | إذا السرعة 300 المسافة تصل لـ 5
+            const dynamicGap = Math.floor(2 + (1300 - game.speed) / 330); 
+            
+            const lastObstacleY = game.obstacles.length > 0 ? Math.min(...game.obstacles.map(o => o.y)) : 99;
+
+            if (lastObstacleY >= dynamicGap && Math.random() > 0.4) {
+                // ضمان بقاء مسار واحد فارغ دائماً
+                const count = Math.random() > 0.85 ? 2 : 1; 
+                let lanes = [0, 1, 2].sort(() => Math.random() - 0.5);
+                
+                for (let i = 0; i < count; i++) {
+                    game.obstacles.push({
+                        x: lanes[i],
+                        y: 0,
+                        emoji: obstaclesEmojis[Math.floor(Math.random() * obstaclesEmojis.length)]
+                    });
+                }
+            }
+
+            // 5. التحديث
+            await sock.sendMessage(from, { text: drawBoard(dynamicGap), edit: game.messageKey }).catch(() => {});
+
+            await sleep(game.speed);
+        } catch (e) {
+            game.gameRunning = false;
+        }
+    }
+
+    const finalMsg = `💥 *اصطدام!* 💥\n\n🏆 النتيجة النهائية: ${game.score}\n⏱️ صمدت لـ: ${Math.floor((Date.now() - game.startTime) / 1000)} ثانية`;
+    await sock.sendMessage(from, { text: finalMsg }, { quoted: msg });
+
+    sock.ev.off('messages.upsert', messageListener);
+    delete raceGames[from];
+}
+
+export default { NovaUltra, execute };

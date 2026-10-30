@@ -1,0 +1,227 @@
+import fs from 'fs-extra';
+import path from 'path';
+
+const guessGames = {};
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+export const NovaUltra = {
+    command: 'تخمين',
+    description: 'لعبة التخمين: خمن الرقم الذي يفكر به البوت (فردي أو جماعي).',
+    elite: "off",
+    group: true,
+    prv: false,
+    lock: "off"
+};
+
+export async function execute({ sock, msg, args }) {
+    const from = msg.key.remoteJid;
+    const sender = msg.key.participant || msg.key.remoteJid;
+
+    if (guessGames[from]) {
+        return await sock.sendMessage(from, { text: '⚠️ هناك جلسة تخمين قائمة بالفعل!' }, { quoted: msg });
+    }
+
+    guessGames[from] = {
+        owner: sender,
+        stage: 'participation',
+        participants: [],
+        gameRunning: true,
+        botNumber: 0,
+        guesses: {}, // { jid: number }
+        messageKey: null
+    };
+
+    const game = guessGames[from];
+    
+    const introText = `✨ *لعبة التخمين!* ✨\n\nالبوت سيفكر برقم من 1 إلى 100 ويجب على احدكم تخمين أقرب رقم له 🎯\n\nفي حال كنت تلعب لوحدك ف البوت سيخمن رقم من 1 إلى 10 ويجب عليك تخمينه بالضبط 🧠\n\nللمشاركة اكتب *شارك*. 📝`;
+    
+    const initialMsg = await sock.sendMessage(from, { text: introText }, { quoted: msg });
+    game.messageKey = initialMsg.key;
+
+    // بدء مؤقت تجميع المشاركين (15 ثانية)
+    setTimeout(async () => {
+        if (guessGames[from] && game.stage === 'participation') {
+            if (game.participants.length === 0) {
+                await sock.sendMessage(from, { text: '❌ لم يشارك أحد، تم إلغاء اللعبة.' });
+                return endSession(from, gameListener, sock);
+            }
+            // بدء اللعبة
+            startActualGame(sock, from, game);
+        }
+    }, 15000);
+
+    const gameListener = async ({ messages }) => {
+        const m = messages[0];
+        if (!m.message || m.key.fromMe || !game.gameRunning || m.key.remoteJid !== from) return;
+
+        const text = (m.message.conversation || m.message.extendedTextMessage?.text || "").trim().toLowerCase();
+        const currentSender = m.key.participant || m.key.remoteJid;
+
+        // --- 1. مرحلة المشاركة ---
+        if (game.stage === 'participation' && text === 'شارك') {
+            if (!game.participants.includes(currentSender)) {
+                game.participants.push(currentSender);
+                await sock.sendMessage(from, { react: { text: '📝', key: m.key } });
+            }
+            return;
+        }
+
+        // --- 2. مرحلة اللعب الفردي ---
+        if (game.stage === 'single_play' && currentSender === game.owner) {
+            const userGuess = parseInt(text);
+            if (!isNaN(userGuess)) {
+                if (userGuess === game.botNumber) {
+                    await sock.sendMessage(from, { react: { text: '✅', key: m.key } });
+                    const winMsg = await sock.sendMessage(from, { text: `🎊 *مبروك!* لقد خمّنت الرقم الصحيح (${game.botNumber}) بنجاح!\n\nلإعادة المحاولة اكتب *اعادة* وللإنهاء اكتب *انهاء*.`, edit: game.messageKey });
+                    // تحديث مفتاح الرسالة لآخر رسالة تم إرسالها لضمان عمل التعديل لاحقاً
+                    if(winMsg) game.messageKey = winMsg.key; 
+                } else {
+                    await sock.sendMessage(from, { react: { text: '❌', key: m.key } });
+                    const loseMsg = await sock.sendMessage(from, { text: `💀 *للأسف إجابة خاطئة!*\nالرقم الصحيح كان: *${game.botNumber}*\n\nلإعادة المحاولة اكتب *اعادة* وللإنهاء اكتب *انهاء*.`, edit: game.messageKey });
+                    if(loseMsg) game.messageKey = loseMsg.key;
+                }
+                game.stage = 'post_game';
+            }
+            return;
+        }
+
+        // --- 3. مرحلة اللعب الجماعي ---
+        if (game.stage === 'multi_play' && game.participants.includes(currentSender)) {
+            const userGuess = parseInt(text);
+            if (!isNaN(userGuess) && userGuess >= 1 && userGuess <= 100) {
+                if (!game.guesses[currentSender]) {
+                    game.guesses[currentSender] = { num: userGuess, key: m.key };
+                    await sock.sendMessage(from, { react: { text: '🆗', key: m.key } });
+                    
+                    // التحقق من اكتمال الجميع
+                    if (Object.keys(game.guesses).length === game.participants.length) {
+                        calculateMultiResults(sock, from, game);
+                    }
+                }
+            }
+            return;
+        }
+
+        // --- 4. مرحلة ما بعد اللعبة (إعادة/إنهاء) ---
+        if (game.stage === 'post_game') {
+            // السماح فقط للمشاركين أو المالك بالتحكم
+            if (game.participants.includes(currentSender) || currentSender === game.owner) {
+                if (text === 'اعادة') {
+                    game.guesses = {};
+                    // نعيد التشغيل مباشرة دون العودة لمرحلة المشاركة لأن المشاركين موجودين
+                    startActualGame(sock, from, game); 
+                } else if (text === 'انهاء') {
+                    await sock.sendMessage(from, { text: '👋 تم إنهاء جلسة التخمين. نراكم لاحقاً!' });
+                    endSession(from, gameListener, sock);
+                }
+            }
+        }
+    };
+
+    sock.ev.on('messages.upsert', gameListener);
+    game.listener = gameListener;
+}
+
+async function startActualGame(sock, from, game) {
+    // دالة مساعدة لإرسال الرسالة سواء تعديل أو جديد لتجنب الأخطاء
+    const sendOrEdit = async (text, mentions = []) => {
+        try {
+            // نحاول التعديل أولاً
+            return await sock.sendMessage(from, { text, mentions, edit: game.messageKey });
+        } catch (e) {
+            // إذا فشل التعديل (الرسالة قديمة جداً)، نرسل رسالة جديدة
+            return await sock.sendMessage(from, { text, mentions });
+        }
+    };
+
+    if (game.participants.length === 1) {
+        // لعب فردي
+        game.stage = 'single_play';
+        await sendOrEdit('👤 *تم اختيار اللعب الفردي!*');
+        await sleep(1500);
+        await sendOrEdit('🤖 البوت يفكر ب رقم الآن..');
+        await sleep(2000);
+        
+        game.botNumber = Math.floor(Math.random() * 10) + 1;
+        const msg = await sendOrEdit(`🎲 *تم اختيار رقم عشوائي من بين 1 - 10!*\nمعك محاولة واحدة لتخمين الرقم الذي اختاره البوت بالضبط للفوز. 🚀`);
+        if (msg) game.messageKey = msg.key; // تحديث المفتاح
+
+    } else {
+        // لعب جماعي
+        game.stage = 'multi_play';
+        await sendOrEdit('🤖 البوت يفكر ب رقم الآن..');
+        await sleep(2000);
+        
+        game.botNumber = Math.floor(Math.random() * 100) + 1;
+        const mentors = game.participants.map(p => `@${p.split('@')[0]}`);
+        
+        const multiPrompt = `🎮 *تم اختيار رقم عشوائي من بين 1 - 100!*\n\nمع كل من المشاركين:\n${mentors.join('\n')}\n\nمحاولة واحدة لتخمين أقرب رقم للرقم الي اختاره البوت والأقرب يفوز! 🏆\n*لعرض النتائج يجب على الكل اختيار رقم.*`;
+        
+        const msg = await sendOrEdit(multiPrompt, game.participants);
+        if (msg) game.messageKey = msg.key; // تحديث المفتاح مهم جداً هنا
+    }
+}
+
+async function calculateMultiResults(sock, from, game) {
+    await sleep(1000);
+    
+    // تحويل التخمينات لمصفوفة
+    const results = Object.entries(game.guesses).map(([jid, data]) => ({
+        jid,
+        num: data.num,
+        diff: Math.abs(game.botNumber - data.num),
+        key: data.key
+    }));
+
+    // ترتيب حسب الأقرب (الفرق الأقل)
+    results.sort((a, b) => a.diff - b.diff);
+
+    const winner = results[0];
+    const losers = results.slice(1);
+
+    // رياكتات الخاسرين
+    for (const loser of losers) {
+        await sock.sendMessage(from, { react: { text: '❌', key: loser.key } });
+        await sleep(300);
+    }
+
+    // رياكت الفائز
+    const winnerReact = winner.diff === 0 ? '🤯' : '✅';
+    await sock.sendMessage(from, { react: { text: winnerReact, key: winner.key } });
+
+    // رسالة النتائج
+    let resultMsg = `🏁 *انتهت الجولة!* 🏁\n\nالعدد الذي اختاره البوت: *${game.botNumber}*\n\n`;
+
+    if (winner.diff === 0) {
+        resultMsg += `🌟 *الي جابها بالضبط :* @${winner.jid.split('@')[0]} (*${winner.num}*) 🤯\n\n`;
+    } else {
+        resultMsg += `🥇 *العدد الأقرب هو :*\nالاقرب : @${winner.jid.split('@')[0]} (*${winner.num}*) ✅\n\n`;
+    }
+
+    if (losers.length > 0) {
+        resultMsg += `💀 *الخاسرون :*\n`;
+        losers.forEach(l => {
+            resultMsg += `@${l.jid.split('@')[0]} : (*${l.num}*)\n`;
+        });
+    }
+
+    resultMsg += `\nللإعادة اكتب *اعادة* وللإنهاء اكتب *انهاء*.`;
+
+    // نرسل النتيجة كرسالة جديدة (لأن التعديل قد لا يكون مرئياً إذا كان الشات طويلاً)
+    // ونحفظ مفتاح هذه الرسالة لكي يتم تعديلها عند الضغط على "اعادة"
+    const finalMsg = await sock.sendMessage(from, { text: resultMsg, mentions: game.participants });
+    
+    game.messageKey = finalMsg.key; // <--- هذا هو الإصلاح الرئيسي
+    game.stage = 'post_game';
+}
+
+function endSession(from, listener, sock) {
+    if (guessGames[from]) {
+        guessGames[from].gameRunning = false;
+        sock.ev.off('messages.upsert', listener);
+        delete guessGames[from];
+    }
+}
+
+export default { NovaUltra, execute };

@@ -1,0 +1,74 @@
+{
+  "120363406367963992@g.us": {
+    "stage": "discussion",
+    "host": "27368219480225@lid",
+    "players": [
+      {
+        "id": "972532731932@s.whatsapp.net",
+        "lid": "136915655344207@lid",
+        "name": "972532731932",
+        "isAlive": true,
+        "role": "مافيا",
+        "number": 1,
+        "immunity": 0,
+        "roleData": {}
+      },
+      {
+        "id": "212603620687@s.whatsapp.net",
+        "lid": "146806981796015@lid",
+        "name": "212603620687",
+        "isAlive": true,
+        "role": "جندي",
+        "number": 2,
+        "immunity": 0,
+        "roleData": {}
+      },
+      {
+        "id": "212724920468@s.whatsapp.net",
+        "lid": "27368219480225@lid",
+        "name": "212724920468",
+        "isAlive": true,
+        "role": "طبيب",
+        "number": 3,
+        "immunity": 0,
+        "roleData": {}
+      },
+      {
+        "id": "972504420065@s.whatsapp.net",
+        "lid": "226332545921042@lid",
+        "name": "972504420065",
+        "isAlive": true,
+        "role": "رجل عصابة",
+        "number": 4,
+        "immunity": 0,
+        "roleData": {}
+      },
+      {
+        "id": "201097702017@s.whatsapp.net",
+        "lid": "210990704644224@lid",
+        "name": "201097702017",
+        "isAlive": true,
+        "role": "سياسي",
+        "number": 5,
+        "immunity": 0,
+        "roleData": {}
+      }
+    ],
+    "round": 1,
+    "discussionTime": 180,
+    "nightActions": {
+      "212724920468@s.whatsapp.net": {
+        "type": "heal",
+        "targetId": "972532731932@s.whatsapp.net"
+      },
+      "972532731932@s.whatsapp.net": {
+        "type": "kill",
+        "targetId": "972532731932@s.whatsapp.net"
+      }
+    },
+    "dayVotes": {},
+    "hasVoted": [],
+    "timeModifiers": [],
+    "spyJoined": false
+  }
+}

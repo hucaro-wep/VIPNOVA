@@ -1,0 +1,83 @@
+import fs from "fs";
+import path from "path";
+import { downloadContentFromMessage, jidDecode } from "@whiskeysockets/baileys";
+import { Sticker } from "wa-sticker-formatter";
+const NovaUltra = {
+  command: "سرقه",
+  description: "سرقة ملصق وتغيير حقوقه",
+  usage: ".سرقه [حقوق جديدة]",
+  category: "tools",
+  group: true
+};
+const decode = jid =>
+  (jidDecode(jid)?.user || jid.split("@")[0]) + "@s.whatsapp.net";
+const TEMP_DIR = path.join(process.cwd(), "tmp");
+if (!fs.existsSync(TEMP_DIR)) {
+  fs.mkdirSync(TEMP_DIR, { recursive: true });
+}
+const DEFAULT_PACK = `╭──˚‧₊⊹ 𝛎𝜄𝜌 ᠀⊹˚‧₊──
+𝚴𝚨𝚳𝚬 : 𝜜𝜨𝜜𝑺𝜯𝜜𝑺𝜤𝜜 𝑽𝜤𝜬
+𝐎𝐖𝐍𝐄𝐑 : 𝐃𝐉𝐍 - 𝐙𝐇𝐄𝐍𝐘𝐀
+╰─˚‧₊⊹𝐓𝐇𝐄 𝐒𝐓𝐈𝐂𝐊𝐄𝐑⊹˚‧₊─`;
+const DEFAULT_AUTHOR = "ぃ 𝒂𝒏𝒂𝒔𝒕𝒂𝒔𝒊𝒂 𝒗𝒊𝒑";
+async function execute({ sock, msg }) {
+  const chatId = msg.key.remoteJid;
+  msg.reply = async text =>
+    sock.sendMessage(chatId, { text }, { quoted: msg });
+  try {
+    const quoted =
+      msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
+    if (!quoted?.stickerMessage) {
+      return msg.reply("❌ رد على ملصق لاستخدام الأمر.");
+    }
+    const text =
+      msg.message?.conversation ||
+      msg.message?.extendedTextMessage?.text ||
+      "";
+    let pack = DEFAULT_PACK;
+    let author = DEFAULT_AUTHOR;
+    if (text.trim().includes(" ")) {
+      const custom = text.slice(text.indexOf(" ") + 1).trim();
+      if (custom.length) {
+        pack = custom;
+      }
+    }
+    const stream = await downloadContentFromMessage(
+      quoted.stickerMessage,
+      "sticker"
+    );
+    let buffer = Buffer.alloc(0);
+    for await (const chunk of stream) {
+      buffer = Buffer.concat([buffer, chunk]);
+    }
+    if (!buffer.length) {
+      return msg.reply("❌ فشل تحميل الملصق.");
+    }
+    const inputPath = path.join(
+      TEMP_DIR,
+      `steal_${Date.now()}.webp`
+    );
+    fs.writeFileSync(inputPath, buffer);
+    const sticker = new Sticker(fs.readFileSync(inputPath), {
+      pack,
+      author,
+      type: "auto",
+      quality: 80,
+      background: "#00000000"
+    });
+    const stickerBuffer = await sticker.toBuffer();
+    await sock.sendMessage(
+      chatId,
+      { sticker: stickerBuffer },
+      { quoted: msg }
+    );
+    fs.unlinkSync(inputPath);
+  } catch (err) {
+    console.error("STEAL COMMAND ERROR:", err);
+    await msg.reply("❌ حدث خطأ أثناء تغيير حقوق الملصق.");
+  }
+}
+export default {
+  NovaUltra,
+  execute
+};

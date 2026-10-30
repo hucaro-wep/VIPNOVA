@@ -1,0 +1,242 @@
+[
+  {
+    "timestamp": 1769390968295,
+    "type": "Link",
+    "chat": "Private Chat",
+    "sender": "271245052539119@lid",
+    "details": "إرسال روابط في الخاص",
+    "action": "Blocked"
+  },
+  {
+    "timestamp": 1769390993454,
+    "type": "Link",
+    "chat": "Private Chat",
+    "sender": "260064698986524@lid",
+    "details": "إرسال روابط في الخاص",
+    "action": "Blocked"
+  },
+  {
+    "timestamp": 1769391056667,
+    "type": "Spam",
+    "chat": "Private Chat",
+    "sender": "271245052539119@lid",
+    "details": "إزعاج البوت (Spam): 5 رسائل متتالية",
+    "action": "Blocked"
+  },
+  {
+    "timestamp": 1769392769693,
+    "type": "Spam",
+    "chat": "Private Chat",
+    "sender": "41159426572389@lid",
+    "details": "إزعاج البوت (Spam): 5 رسائل متتالية",
+    "action": "Blocked"
+  },
+  {
+    "timestamp": 1769393949765,
+    "type": "Spam",
+    "chat": "Private Chat",
+    "sender": "41159426572389@lid",
+    "details": "إزعاج البوت (Spam): 5 رسائل متتالية",
+    "action": "Blocked"
+  },
+  {
+    "timestamp": 1769394090182,
+    "type": "Virus",
+    "chat": "Private Chat",
+    "sender": "224670410367210@lid",
+    "details": "رسالة فيروس/تعليق (13338 حرف)",
+    "action": "Blocked + Chat Cleared"
+  },
+  {
+    "timestamp": 1769412617604,
+    "type": "Virus",
+    "chat": "Private Chat",
+    "sender": "120363405744965380@newsletter",
+    "details": "رسالة فيروس/تعليق (5513 حرف)",
+    "action": "Blocked + Chat Cleared"
+  },
+  {
+    "timestamp": 1769423722412,
+    "type": "Virus",
+    "chat": "Private Chat",
+    "sender": "120363402107198149@newsletter",
+    "details": "رسالة فيروس/تعليق (5781 حرف)",
+    "action": "Blocked + Chat Cleared"
+  },
+  {
+    "timestamp": 1769424466963,
+    "type": "Virus",
+    "chat": "Private Chat",
+    "sender": "120363402107198149@newsletter",
+    "details": "رسالة فيروس/تعليق (5781 حرف)",
+    "action": "Blocked + Chat Cleared"
+  },
+  {
+    "timestamp": 1769424942756,
+    "type": "Virus",
+    "chat": "Private Chat",
+    "sender": "120363402107198149@newsletter",
+    "details": "رسالة فيروس/تعليق (5781 حرف)",
+    "action": "Blocked + Chat Cleared"
+  },
+  {
+    "timestamp": 1769425249690,
+    "type": "Virus",
+    "chat": "Private Chat",
+    "sender": "120363402107198149@newsletter",
+    "details": "رسالة فيروس/تعليق (5779 حرف)",
+    "action": "Blocked + Chat Cleared"
+  },
+  {
+    "timestamp": 1769425531068,
+    "type": "Virus",
+    "chat": "Private Chat",
+    "sender": "120363402107198149@newsletter",
+    "details": "رسالة فيروس/تعليق (5780 حرف)",
+    "action": "Blocked + Chat Cleared"
+  },
+  {
+    "timestamp": 1769434188625,
+    "type": "Virus",
+    "chat": "Private Chat",
+    "sender": "120363402107198149@newsletter",
+    "details": "رسالة فيروس/تعليق (5781 حرف)",
+    "action": "Blocked + Chat Cleared"
+  },
+  {
+    "timestamp": 1769442011483,
+    "type": "Virus",
+    "chat": "Private Chat",
+    "sender": "27368219480225@lid",
+    "details": "رسالة فيروس/تعليق (10388 حرف)",
+    "action": "Blocked + Chat Cleared"
+  },
+  {
+    "timestamp": 1769442579326,
+    "type": "Virus",
+    "chat": "Private Chat",
+    "sender": "120363402762765779@newsletter",
+    "details": "رسالة فيروس/تعليق (9664 حرف)",
+    "action": "Blocked + Chat Cleared"
+  },
+  {
+    "timestamp": 1769442682405,
+    "type": "Virus",
+    "chat": "Private Chat",
+    "sender": "136915655344207@lid",
+    "details": "رسالة فيروس/تعليق (10388 حرف)",
+    "action": "Blocked + Chat Cleared"
+  },
+  {
+    "timestamp": 1769444890272,
+    "type": "Virus",
+    "chat": "Private Chat",
+    "sender": "120363402107198149@newsletter",
+    "details": "رسالة فيروس/تعليق (5781 حرف)",
+    "action": "Blocked + Chat Cleared"
+  },
+  {
+    "timestamp": 1769547120093,
+    "type": "Link",
+    "chat": "Private Chat",
+    "sender": "120363252143014230@newsletter",
+    "details": "إرسال روابط ممنوعة",
+    "action": "Blocked"
+  },
+  {
+    "timestamp": 1769547766606,
+    "type": "Link",
+    "chat": "Private Chat",
+    "sender": "120363285497174087@newsletter",
+    "details": "إرسال روابط ممنوعة",
+    "action": "Blocked"
+  },
+  {
+    "timestamp": 1769548681026,
+    "type": "Link",
+    "chat": "Private Chat",
+    "sender": "120363174450111513@newsletter",
+    "details": "إرسال روابط ممنوعة",
+    "action": "Blocked"
+  },
+  {
+    "timestamp": 1769548692991,
+    "type": "Link",
+    "chat": "Private Chat",
+    "sender": "120363174450111513@newsletter",
+    "details": "إرسال روابط ممنوعة",
+    "action": "Blocked"
+  },
+  {
+    "timestamp": 1769548722993,
+    "type": "Link",
+    "chat": "Private Chat",
+    "sender": "120363174450111513@newsletter",
+    "details": "إرسال روابط ممنوعة",
+    "action": "Blocked"
+  },
+  {
+    "timestamp": 1769548734097,
+    "type": "Link",
+    "chat": "Private Chat",
+    "sender": "120363174450111513@newsletter",
+    "details": "إرسال روابط ممنوعة",
+    "action": "Blocked"
+  },
+  {
+    "timestamp": 1769549100704,
+    "type": "Link",
+    "chat": "Private Chat",
+    "sender": "120363174450111513@newsletter",
+    "details": "إرسال روابط ممنوعة",
+    "action": "Blocked"
+  },
+  {
+    "timestamp": 1769551406948,
+    "type": "Link",
+    "chat": "Private Chat",
+    "sender": "120363174450111513@newsletter",
+    "details": "إرسال روابط ممنوعة",
+    "action": "Blocked"
+  },
+  {
+    "timestamp": 1769557512085,
+    "type": "Link",
+    "chat": "Private Chat",
+    "sender": "120363143933827248@newsletter",
+    "details": "إرسال روابط ممنوعة",
+    "action": "Blocked"
+  },
+  {
+    "timestamp": 1769558771865,
+    "type": "Link",
+    "chat": "Private Chat",
+    "sender": "120363252143014230@newsletter",
+    "details": "إرسال روابط ممنوعة",
+    "action": "Blocked"
+  },
+  {
+    "timestamp": 1770280671749,
+    "type": "Link",
+    "chat": "Private Chat",
+    "sender": "120363422716277994@newsletter",
+    "details": "إرسال روابط ممنوعة",
+    "action": "Blocked"
+  },
+  {
+    "timestamp": 1770328354804,
+    "type": "Spam",
+    "chat": "Private Chat",
+    "sender": "38655393583209@lid",
+    "details": "إزعاج البوت (Spam): 5 رسائل متتالية",
+    "action": "Blocked"
+  },
+  {
+    "timestamp": 1793345247047,
+    "type": "Link",
+    "chat": "Private Chat",
+    "sender": "120363323613877584@newsletter",
+    "details": "إرسال روابط ممنوعة",
+    "action": "Blocked"
+  }
+]

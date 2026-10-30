@@ -1,0 +1,209 @@
+import fs from 'fs-extra';
+
+import path from 'path';
+
+const memoryGames = {};
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+export const NovaUltra = {
+
+    command: 'تذكر',
+
+    description: 'لعبة الذاكرة المطورة: مع عداد أحرف أسفل العرض (1/5).',
+
+    elite: "off",
+
+    group: true,
+
+    prv: false,
+
+    lock: "off"
+
+};
+
+export async function execute({ sock, msg, args }) {
+
+    const from = msg.key.remoteJid;
+
+    const sender = msg.key.participant || msg.key.remoteJid;
+
+    if (memoryGames[from]) {
+
+        return await sock.sendMessage(from, { text: '⚠️ التحدي قائم بالفعل!' }, { quoted: msg });
+
+    }
+
+    memoryGames[from] = {
+
+        player: sender,
+
+        level: 1,
+
+        gameRunning: true,
+
+        messageKey: null,
+
+        targetChar: '',
+
+        status: 'waiting' 
+
+    };
+
+    const game = memoryGames[from];
+
+    const initialText = `*لعبة تذكر!* 🧠\n\nسيتم عرض أحرف سريعة، اكتشف الحرف الذي تكرر مرتين.\n\nاللاعب الحالي: @${sender.split('@')[0]}\nيرجى كتابة *بدء* للبدء`;
+
+    const startMsg = await sock.sendMessage(from, { text: initialText, mentions: [sender] }, { quoted: msg });
+
+    game.messageKey = startMsg.key;
+
+    const gameListener = async ({ messages }) => {
+
+        const m = messages[0];
+
+        if (!m.message || m.key.fromMe || !game.gameRunning || m.key.remoteJid !== from) return;
+
+        
+
+        const currentSender = m.key.participant || m.key.remoteJid;
+
+        const text = (m.message.conversation || m.message.extendedTextMessage?.text || "").trim().toUpperCase();
+
+        if (currentSender !== game.player) return;
+
+        if (game.status === 'waiting' && text === 'بدء') {
+
+            game.status = 'displaying';
+
+            startGameLoop(sock, from, game);
+
+            return;
+
+        }
+
+        if (game.status === 'answering') {
+
+            if (text === game.targetChar) {
+
+                await sock.sendMessage(from, { react: { text: '✅', key: m.key } });
+
+                game.level++;
+
+                
+
+                if (game.level > 10) {
+
+                    await sock.sendMessage(from, { text: `🎊 *أسطورة الذاكرة!* \nلقد اجتزت المرحلة 10 بنجاح. 🏆`, edit: game.messageKey });
+
+                    endSession(from, gameListener, sock);
+
+                } else {
+
+                    await sock.sendMessage(from, { text: `⚡ *أحسنت!* المرحلة التالية: ${game.level}...`, edit: game.messageKey });
+
+                    game.status = 'displaying';
+
+                    await sleep(1500); 
+
+                    startGameLoop(sock, from, game);
+
+                }
+
+            } else {
+
+                if (text.length !== 1) return; 
+
+                await sock.sendMessage(from, { react: { text: '❌', key: m.key } });
+
+                await sock.sendMessage(from, { text: `*لقد خسرت في المرحلة ${game.level}!* 💀\nالحرف الصحيح كان: ${game.targetChar}\nاكتب .تذكر للعب مرة أخرى.`, edit: game.messageKey });
+
+                endSession(from, gameListener, sock);
+
+            }
+
+        }
+
+    };
+
+    sock.ev.on('messages.upsert', gameListener);
+
+    game.listener = gameListener;
+
+}
+
+async function startGameLoop(sock, from, game) {
+
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+    // الحروف تبدأ بـ 5 وتزيد حرفين بعد المرحلة الثالثة
+
+    let charCount = game.level <= 2 ? 5 : 5 + (game.level - 2) * 2;
+
+    
+
+    const repeatedChar = chars[Math.floor(Math.random() * chars.length)];
+
+    game.targetChar = repeatedChar;
+
+    let sequence = [repeatedChar, repeatedChar];
+
+    while (sequence.length < charCount) {
+
+        let randomChar = chars[Math.floor(Math.random() * chars.length)];
+
+        if (!sequence.includes(randomChar)) sequence.push(randomChar);
+
+    }
+
+    sequence = sequence.sort(() => Math.random() - 0.5);
+
+    // حلقة عرض الأحرف مع العداد
+
+    let currentIndex = 1;
+
+    for (let char of sequence) {
+
+        if (!game.gameRunning) return;
+
+        
+
+        // تعديل النص ليشمل العداد بالأسفل
+
+        const displayPrompt = `\n\n      *--- [ ${char} ] ---*\n      *(${currentIndex}/${charCount})*\n\n`;
+
+        
+
+        await sock.sendMessage(from, { text: displayPrompt, edit: game.messageKey });
+
+        currentIndex++;
+
+        await sleep(1000);
+
+    }
+
+    await sock.sendMessage(from, { text: `*انتهى العرض!* ⏳\nما هو الحرف الذي تكرر؟`, edit: game.messageKey });
+
+    
+
+    await sleep(1000); // فترة الهدوء لضمان عدم حدوث خطأ
+
+    game.status = 'answering';
+
+}
+
+function endSession(from, listener, sock) {
+
+    if (memoryGames[from]) {
+
+        memoryGames[from].gameRunning = false;
+
+        sock.ev.off('messages.upsert', listener);
+
+        delete memoryGames[from];
+
+    }
+
+}
+
+export default { NovaUltra, execute };

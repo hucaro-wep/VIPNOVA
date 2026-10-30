@@ -1,0 +1,19 @@
+{
+  "jids": [
+    "201033156790@s.whatsapp.net",
+    "201228894793@s.whatsapp.net",
+    "201070185184@s.whatsapp.net"
+  ],
+  "lids": [
+    "144324423643374@lid",
+    "30782315855949@lid",
+    null
+  ],
+  "twice": {
+    "201033156790@s.whatsapp.net": "144324423643374@lid",
+    "144324423643374@lid": "201033156790@s.whatsapp.net",
+    "201228894793@s.whatsapp.net": "30782315855949@lid",
+    "30782315855949@lid": "201228894793@s.whatsapp.net",
+    "undefined": "201070185184@s.whatsapp.net"
+  }
+}
